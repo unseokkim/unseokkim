@@ -1,0 +1,199 @@
+################################ 자료불러오기 ################################
+data=read.csv("C:/Users/김운석/Desktop/teq_test/imports85.csv", na.strings="?")
+attach(data)
+################################ 필요라이브러리 불러오기 ################################
+library("Amelia")
+library("dplyr")
+library("e1071")
+library("gmodels")
+library("car")
+library("Metrics")
+library("partykit")
+library("randomForest")
+library("DMwR")
+library("lmtest")
+################################ 분석에 불필요한 변수 제거 ################################
+data=subset(data, select=-id)
+data=subset(data, select=-symboling)
+################################ 기초 데이터 분석 ################################
+summary(data)
+str(data)
+summary(data)
+colSums(is.na(data))
+################################ 결측값처리 ################################
+missmap(data, main = 'Missing Map', col = c('yellow', 'black'), legend = F)
+data <- data[!is.na(data$normalized.losses),]
+missmap(data, main = 'Missing Map', col = c('yellow', 'black'), legend = F)
+colSums(is.na(data))
+
+data[!complete.cases(data$num.of.doors),]
+numofdoormiss <- filter(data, make=="dodge" & fuel.type=="gas" & body.style=="sedan")
+print(numofdoormiss)
+print(data$num.of.doors)
+data[c(18), "num.of.doors"]<-"four"
+sum(is.na(data$num.of.doors))
+
+data[!complete.cases(data$bore),]
+boremiss<-filter(data, make=="mazda" & body.style=="hatchback")
+print(boremiss)
+print(data$bore)
+data[c(40:42), "bore"]<-3.52
+data[c(43), "bore"]<-3.7
+sum(is.na(data$bore))
+
+data[!complete.cases(data$stroke),]
+strokemiss<-filter(data, make=="mazda" & body.style=="hatchback")
+print(strokemiss)
+print(data$stroke)
+data[c(40:42), "stroke"]<-3.59
+data[c(43), "stroke"]<-3.72
+sum(is.na(data$stroke))
+missmap(data, main = 'Missing Map', col = c('yellow', 'black'), legend = F)
+
+################################ 기초분석 & ploting ################################
+summary(data)
+str(data)
+##범주형 변수 histogram##
+plot(data$make, xlab="make", ylab="obs")
+plot(data$fuel.type, xlab="fueltype", ylab="obs")
+plot(data$aspiration, xlab="aspiration", ylab="obs")
+plot(data$num.of.doors, xlab="numofdoors", ylab="obs")
+plot(data$body.style, xlab="bodystyle", ylab="obs")
+plot(data$drive.wheels, xlab="drivewheels", ylab="obs")
+plot(data$engine.location, xlab="enginelocation", ylab="obs")
+plot(data$engine.type, xlab="enginetype", ylab="obs")
+plot(data$num.of.cylinders, xlab="numofcylinders", ylab="obs")
+plot(data$fuel.system, xlab="fuelsystem", ylab="obs")
+
+##범주형 변수 crosstable##
+table(data$num.of.doors,data$make)
+table(data$body.style,data$make)
+table(data$engine.type,data$make)
+table(data$num.of.cylinders,data$make)
+table(data$fuel.type,data$num.of.cylinders)
+table(data$num.of.doors,data$body.style)
+table(data$drive.wheels,data$body.style)
+table(data$engine.type,data$body.style)
+table(data$num.of.cylinders,data$body.style)
+
+##타겟변수와 범주형변수와의 분산 분석##
+aov1<-aov(normalized.losses~ fuel.type, data=data)
+summary(aov1)
+
+##연속형 변수 plot##
+plot(data$normalized.losses, type='l', xlab="obs", ylab="normalizedlosses")
+plot(data$wheel.base, type='l', xlab="obs", ylab="wheelbase")
+plot(data$length, type='l', xlab="obs", ylab="bodylength")
+plot(data$width, type='l', xlab="obs", ylab="bodywidth")
+plot(data$height, type='l', xlab="obs", ylab="bodyheight")
+plot(data$curb.weight, type='l', xlab="obs", ylab="curbweight")
+plot(data$engine.size, type='l', xlab="obs", ylab="engine.size")
+plot(data$bore, type='l', xlab="obs", ylab="bore")
+plot(data$stroke, type='l', xlab="obs", ylab="stroke")
+plot(data$compression.ratio, type='l', xlab="obs", ylab="compressionratio")
+plot(data$horsepower, type='l', xlab="obs", ylab="horsepower")
+plot(data$peak.rpm, type='l', xlab="obs", ylab="peak.rpm")
+plot(data$city.mpg, type='l', xlab="obs", ylab="city.mpg")
+plot(data$highway.mpg, type='l', xlab="obs", ylab="highwaympg")
+plot(data$price, type='l', xlab="obs", ylab="price")
+
+##타 연속형 변수들과 y값과의 관계##
+scatter.smooth(x=data$price, y=data$normalized.losses)
+cor.test(x=data$price, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$curb.weight, y=data$normalized.losses)
+cor.test(x=data$curb.weight, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$engine.size, y=data$normalized.losses)
+cor.test(x=data$engine.size, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$bore, y=data$normalized.losses)
+cor.test(x=data$bore, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$stroke, y=data$normalized.losses)
+cor.test(x=data$stroke, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$compression.ratio, y=data$normalized.losses)
+cor.test(x=data$compression.ratio, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$horsepower, y=data$normalized.losses)
+cor.test(x=data$horsepower, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$peak.rpm, y=data$normalized.losses)
+cor.test(x=data$peak.rpm, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$city.mpg, y=data$normalized.losses)
+cor.test(x=data$city.mpg, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$highway.mpg, y=data$normalized.losses)
+cor.test(x=data$highway.mpg, y=data$normalized.losses, method="spearman")
+scatter.smooth(x=data$price, y=data$normalized.losses)
+cor.test(x=data$price, y=data$normalized.losses, method="spearman")
+
+
+##y값 이외의 연속형 변수와 관계##
+summary(data)
+plot(data$fuel.type, data$compression.ratio)
+scatter.smooth(data$price, data$horsepower)
+cor.test(x=data$price, y=data$horsepower, method="spearman")
+scatter.smooth(data$price, data$engine.size)
+cor.test(x=data$price, y=data$engine.size, method="spearman")
+scatter.smooth(data$price, data$curb.weight)
+cor.test(x=data$price, y=data$curb.weight, method="spearman")
+ks.test(data$normalized.losses, data$price)
+ks.test(data$engine.size, data$curb.weight)
+ks.test(data$bore, data$stroke)
+
+################################ 본 분석 ################################
+
+## train-test-1 ##
+ind=sample(c(0,1), nrow(data),replace=T,prob=c(0.6,0.4))
+train1=data[ind==0,]
+test1=data[ind==1,]
+
+## train-test-2 ##
+ind=sample(c(0,1), nrow(data),replace=T,prob=c(0.7,0.3))
+train2=data[ind==0,]
+test2=data[ind==1,]
+
+## train-test-3 ##
+ind=sample(c(0,1), nrow(data),replace=T,prob=c(0.8,0.2))
+train3=data[ind==0,]
+test3=data[ind==1,]
+
+## 모델링 ##
+#다중회귀분석
+model.1<-lm(normalized.losses ~make+body.style+wheel.base+curb.weight+num.of.cylinders+horsepower+peak.rpm+price,data=data)
+summary(model.1)
+model.1.1 <- step(model.1,direction = 'backward')
+summary(model.1.1)
+vif(model.1.1)
+model.1.2<-lm(normalized.losses ~ make + body.style + wheel.base + peak.rpm, data=data)
+summary(model.1.2)
+vif(model.1.2)
+resimodel.1.2 <- residuals(model.1.2)
+mean(resimodel.1.2)
+plot(resimodel.1.2)
+qqnorm(resimodel.1.2)
+qqline(resimodel.1.2)
+shapiro.test(resimodel.1.2)
+dwtest(model.1.2)
+influence.measures(model.1.2)
+predactual.1<-cbind('Predicted value'=fitted(model.1.2),'Actual value'=data$normalized.losses)
+print(predactual.1)
+mse(data$normalized.losses,fitted(model.1.2))
+
+
+#SVR
+model.2.1 = svm(normalized.losses~., train1, kernel="polynomial", cost=3, gamma=5)
+model.2.2 = svm(normalized.losses~., train2, kernel="polynomial", cost=3, gamma=5)
+model.2.3 = svm(normalized.losses~., train3, kernel="polynomial", cost=3, gamma=5)
+predsvm1 = predict(model.2.1, test1)
+mse(test1$normalized.losses,predsvm1)
+predsvm2 = predict(model.2.2, test2)
+mse(test2$normalized.losses,predsvm2)
+predsvm3 = predict(model.2.3, test3)
+mse(test3$normalized.losses,predsvm3)
+
+
+#random forest
+model.3.1 = randomForest(normalized.losses~.,train1,ntree=50)
+model.3.2 = randomForest(normalized.losses~.,train1,ntree=50)
+model.3.3 = randomForest(normalized.losses~.,train1,ntree=50)
+predrf1 = predict(model.3.1, test1)
+mse(test1$normalized.losses,predrf1)
+predrf2 = predict(model.3.2, test2)
+mse(test2$normalized.losses,predrf2)
+predrf3 = predict(model.3.3, test3)
+mse(test3$normalized.losses,predrf3)
